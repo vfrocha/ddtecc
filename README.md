@@ -15,4 +15,4 @@ All the datasets have been obtained from the multi-label data repository in http
 		    ```boolean[] bip = ensembleMLO.getBipartition();
             double[] conf = ensembleMLO.getConfidences();```
 	1.  Combine their outputs using the choosen fusion scheme.
-1. Check the examples at the ```mulan.examples``` package on how to run your experiments using a [Evaluator](http://mulan.sourceforge.net/doc/mulan/evaluation/Evaluator.html "Evaluator").
+1. Check out the examples provided at the ```mulan.examples``` package on how to run your experiments using a [Evaluator](http://mulan.sourceforge.net/doc/mulan/evaluation/Evaluator.html "Evaluator").
