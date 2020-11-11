@@ -10,7 +10,7 @@ All the datasets have been obtained from the multi-label data repository in http
 
 ## Basic instructions on how to test your own fusion scheme for Ensemble of Classifier Chains
 
-1. Overriride  the ```makePredictionInternal(Instance instance)``` method for the ```EnsembleOfClassifierChains``` located at the ```mulan.classifier.transformation``` package,
+1. Replace the ```makePredictionInternal(Instance instance)``` method for the ```EnsembleOfClassifierChains``` located at the ```mulan.classifier.transformation``` package,
 	1.  Gather the ```MultiLabelOutput ensembleMLO``` of each classifier from the ensemble, your can use the their confidences and bipartitions:
 		    ```boolean[] bip = ensembleMLO.getBipartition();
             double[] conf = ensembleMLO.getConfidences();```
