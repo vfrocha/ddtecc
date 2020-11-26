@@ -15,96 +15,21 @@
  */
 package mulan.classifier.transformation;
 
-import java.util.Arrays;
-import java.util.Random;
 import mulan.classifier.InvalidDataException;
 import mulan.classifier.MultiLabelOutput;
-import static mulan.classifier.meta.RAkEL.binomial;
 import mulan.data.MultiLabelInstances;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.J48;
 import weka.core.Instance;
-import weka.core.Instances;
-import weka.filters.Filter;
-import weka.filters.unsupervised.instance.RemovePercentage;
 
 /**
  * <p>
  * Implementation of the Decition Template Ensemble of Classifier Chains(DTECC) algorithm.</p>
  * <p>
  */
-public class EnsembleOfClassifierChainsDT extends TransformationBasedMultiLabelLearner {
+public class EnsembleOfClassifierChainsDT extends EnsembleOfClassifierChains {
 
-    /**
-     * The number of classifier chain models
-     */
-    protected int numOfModels;
-    /**
-     * Parameter for the threshold of discretization of prediction output
-     */
-    protected double threshold = 0.5;
-    /**
-     * /**
-     * An array of ClassifierChain models
-     */
-    protected ClassifierChain[] ensemble;
-    /**
-     * Random number generator
-     */
-    protected Random rand;
-    /**
-     * Whether to use sampling with replacement to create the data of the models
-     * of the ensemble
-     */
-    protected boolean useSamplingWithReplacement = true;
-    /**
-     * The size of each bag sample, as a percentage of the training size. Used
-     * when useSamplingWithReplacement is true
-     */
-    protected int BagSizePercent = 100;
     private MLDT MultiLabelDecisionTemplate;
-
-    /**
-     * Returns the size of each bag sample, as a percentage of the training size
-     *
-     * @return the size of each bag sample, as a percentage of the training size
-     */
-    public int getBagSizePercent() {
-        return BagSizePercent;
-    }
-
-    /**
-     * Sets the size of each bag sample, as a percentage of the training size
-     *
-     * @param bagSizePercent the size of each bag sample, as a percentage of the
-     * training size
-     */
-    public void setBagSizePercent(int bagSizePercent) {
-        BagSizePercent = bagSizePercent;
-    }
-
-    /**
-     * Returns the sampling percentage
-     *
-     * @return the sampling percentage
-     */
-    public double getSamplingPercentage() {
-        return samplingPercentage;
-    }
-
-    /**
-     * Sets the sampling percentage
-     *
-     * @param samplingPercentage the sampling percentage
-     */
-    public void setSamplingPercentage(double samplingPercentage) {
-        this.samplingPercentage = samplingPercentage;
-    }
-    /**
-     * The size of each sample, as a percentage of the training size Used when
-     * useSamplingWithReplacement is false
-     */
-    protected double samplingPercentage = 67;
 
     /**
      * Default constructor
@@ -124,72 +49,17 @@ public class EnsembleOfClassifierChainsDT extends TransformationBasedMultiLabelL
      */
     public EnsembleOfClassifierChainsDT(Classifier classifier, int aNumOfModels,
             boolean doUseSamplingWithReplacement) {
-        super(classifier);
-        numOfModels = aNumOfModels;
-        useSamplingWithReplacement = doUseSamplingWithReplacement;
-        ensemble = new ClassifierChain[aNumOfModels];
-        rand = new Random(1);
+        super(classifier,aNumOfModels,false,doUseSamplingWithReplacement);
     }
 
     public EnsembleOfClassifierChainsDT(Classifier classifier, int aNumOfModels,
             boolean doUseSamplingWithReplacement, double threshold) {
-        super(classifier);
-        numOfModels = aNumOfModels;
-        useSamplingWithReplacement = doUseSamplingWithReplacement;
-        ensemble = new ClassifierChain[aNumOfModels];
-        rand = new Random(1);
-        this.threshold = threshold;
     }
 
     @Override
     protected void buildInternal(MultiLabelInstances trainingSet) throws Exception {
-
-        Instances dataSet = new Instances(trainingSet.getDataSet());
-
-        // default number of models = twice the number of labels
-        if (numOfModels == 0) {
-            numOfModels = Math.min(2 * numLabels, binomial(numLabels, 3));
-        }
-        
-        for (int i = 0; i < numOfModels; i++) {
-            debug("ECC Building Model:" + (i + 1) + "/" + numOfModels);
-            Instances sampledDataSet;
-            dataSet.randomize(rand);
-            if (useSamplingWithReplacement) {
-                int bagSize = dataSet.numInstances() * BagSizePercent / 100;
-                // create the in-bag dataset
-                sampledDataSet = dataSet.resampleWithWeights(new Random(1));
-                if (bagSize < dataSet.numInstances()) {
-                    sampledDataSet = new Instances(sampledDataSet, 0, bagSize);
-                }
-            } else {
-                RemovePercentage rmvp = new RemovePercentage();
-                rmvp.setInvertSelection(true);
-                rmvp.setPercentage(samplingPercentage);
-                rmvp.setInputFormat(dataSet);
-                sampledDataSet = Filter.useFilter(dataSet, rmvp);
-            }
-            MultiLabelInstances train = new MultiLabelInstances(sampledDataSet, trainingSet.getLabelsMetaData());
-
-            int[] chain = new int[numLabels];
-            for (int j = 0; j < numLabels; j++) {
-                chain[j] = j;
-            }
-            for (int j = 0; j < chain.length; j++) {
-                int randomPosition = rand.nextInt(chain.length);
-                int temp = chain[j];
-                chain[j] = chain[randomPosition];
-                chain[randomPosition] = temp;
-            }
-            debug(Arrays.toString(chain));
-
-            // MAYBE WE SHOULD CHECK NOT TO PRODUCE THE SAME VECTOR FOR THE
-            // INDICES
-            // BUT IN THE PAPER IT DID NOT MENTION SOMETHING LIKE THAT
-            // IT JUST SIMPLY SAY A RANDOM CHAIN ORDERING OF L
-            ensemble[i] = new ClassifierChain(baseClassifier, chain);
-            ensemble[i].build(train);
-        }
+        super.buildInternal(trainingSet);
+        /*Building the Decision Templates matrices*/
         MultiLabelDecisionTemplate = new MLDT(ensemble, threshold);
         MultiLabelDecisionTemplate.build(trainingSet);
     }
